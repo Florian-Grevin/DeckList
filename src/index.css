@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+
+    .default {
+    background-color: #ccc;
+    color: #000000;
+    }
+
+    .dark {
+    background-color: #333;
+    color: #f0f0f0;
+    }
+
+    .light {
+    background-color: #f9f9f9;
+    color: #333333;
+    }
+
+    .blue {
+    background-color: #e0f2ff;
+    color: #005f99;
+    }
+
+    .green {
+    background-color: #e6f4ea;
+    color: #2e7d32;
+    }
+
+    .red {
+    background-color: #ffe5e5;
+    color: #c62828;
+    }
+
+    .purple {
+    background-color: #f3e5f5;
+    color: #6a1b9a;
+    }
+
+    .container {
+    background-color: var(background-color);
+    color: var(color);
+    }
