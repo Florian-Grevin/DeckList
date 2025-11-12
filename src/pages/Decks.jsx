@@ -2,21 +2,24 @@ import Navbar from "../components/Navbar";
 import DeckList from "../components/DeckList.jsx";
 import { handle401 } from "../assets/utils/authUtils";
 import DeckForm from "../components/DeckForm.jsx";
-// import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api.js";
 
 import { useNotification } from "../contexts/NotificationContext.jsx";
 import { useState, useEffect } from "react";
 
+import { useDecks } from "../contexts/DecksContext.jsx";
+
 export default function Decks() {
 
     const navigate = useNavigate();
     const {showSuccess, showError} = useNotification();
-    const [decks, setDecks] = useState([]);
     const [editingDeck, setEditingDeck] = useState(null);
     const [loading,setLoading]=useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const { decks,setDecks, fetchDecks } = useDecks();
+    
 
     const openForm = () => {
         setEditingDeck(null);
@@ -37,7 +40,8 @@ export default function Decks() {
         fetchDecks();
     }, []);
 
-    const fetchDecks = async() => {
+    //Decks
+    /*const fetchDecks = async() => {
 
         setLoading(true);
         try {
@@ -54,7 +58,7 @@ export default function Decks() {
         finally {
         setLoading(false);
         }
-    }
+    }*/
 
     const addDeck = async (formData) => {
         setLoading(true);
@@ -81,7 +85,6 @@ export default function Decks() {
         }
     };
 
-
     const removeDeck = async(id) => {
         setLoading(true);
         console.log("entering removeDeck")
@@ -103,18 +106,34 @@ export default function Decks() {
         }
     }
 
+    const handleSortDecks = (e) => {
+        const sortingDecks = e.target.value.split("-");
+        sortDecks(sortingDecks[0], sortingDecks[1]);
+    }
+
+    const sortDecks = (createdUpdated = "createdAt", isAsc = "asc") => {
+        const sorted = [...decks].sort((a, b) =>
+            isAsc === "asc"
+                ? new Date(a[createdUpdated]) - new Date(b[createdUpdated])
+                : new Date(b[createdUpdated]) - new Date(a[createdUpdated])
+        );
+        setDecks(sorted);
+    };
+
     return(
     <>
         <Navbar />
-        <select className="font-semibold" name="sortOrder" id="sortOrder">
-            <option className="font-semibold"value="desc">📅 Date décroissante</option>
-            <option className="font-semibold" value="asc">📅 Date croissante</option>
+        <select onChange={handleSortDecks} className="font-semibold" name="sortOrder" id="sortOrder">
+            <option className="font-semibold"value="createdAt-desc">📅 Créations les plus récentes</option>
+            <option className="font-semibold" value="createdAt-asc">📅 Créations les plus anciennes</option>
+            <option className="font-semibold"value="updatedAt-desc">📅 Mise à jour les plus récentes</option>
+            <option className="font-semibold" value="updatedAt-asc">📅 Mise à jour les plus récentes</option>
         </select>
 
         <button onClick={openForm} className="bg-amber-500 text-white font-bold p-2 m-4 rounded-lg cursor-pointer">Créer Présentation</button>
         {isModalOpen && <DeckForm addDeck={addDeck} deck={editingDeck} closeForm={closeForm}/>}
 
-        <DeckList decks={decks} removeDeck={removeDeck} loading={loading} editForm={handleEdit} closeForm={closeForm}/>
+        <DeckList decks={decks} removeDeck={removeDeck} loading={loading} editForm={handleEdit}/>
     </>
     )
 }

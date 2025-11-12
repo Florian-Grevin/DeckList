@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 
-export default function DeckList({decks, removeDeck, loading, editForm, closeForm}) {
-    const navigate=useNavigate();
+
+export default function DeckList({decks, removeDeck, loading, editForm}) {
+    const navigate = useNavigate();
 
 
     const handleEdit=(deck)=>{
@@ -34,20 +35,43 @@ export default function DeckList({decks, removeDeck, loading, editForm, closeFor
     }
 
     const DeckCard = ({deck}) => {
+        
         const handleClick=()=>{
-            navigate(`/decks/${deck.id}`)
+            navigate(`/decks/${deck.id}`);
         }
 
         return (
-            <div 
-                className={`aspect-[${deck.ratio.replace(":", "/")}] transform hover:scale-110 transition duration-300 border-3 ${deck.theme} border-[#0093b8] rounded-lg shadow-md px-8 py-4 mt-4 cursor-pointer}`}
-            >
-                <p className="font-bold text-center hover:underline" onClick={()=>handleClick(deck)}>{deck.title}</p>
-                <p><span className="font-semibold">Thème:</span> {deck.theme}</p>
-                <p><span className="font-semibold">Ratio:</span> {deck.ratio}</p>
-                <p><span className="font-semibold">Taille:</span> {deck.slides.length}</p>
-                <p><span className="font-semibold">Crée :</span> {timeAgo(deck.createdAt)}</p>
-                <p><span className="font-semibold">Modifié :</span> {timeAgo(deck.updatedAt)}</p>
+            <div
+                className={`
+                    aspect-[${deck.ratio.replace(":", "/")}] flex flex-col justify-between transform hover:scale-110 
+                    transition duration-300 border-3 border-[#0093b8] rounded-lg shadow-md px-8 py-4 mt-4 cursor-pointer
+                    bg-[var(--${deck.theme}_primary)] text-[var(--${deck.theme}_secondary)]
+                }`}
+            >   <div className="hover:cursor-pointer" onClick={()=>handleClick(deck)}>
+                    <p className="font-bold text-center">{deck.title}</p>
+                    <p><span className="font-semibold">Thème:</span> {deck.theme}</p>
+                    <p><span className="font-semibold">Ratio:</span> {deck.ratio}</p>
+                    <p><span className="font-semibold">Crée:</span> {timeAgo(deck.createdAt)}</p>
+                    <p><span className="font-semibold">Modifié:</span> {timeAgo(deck.updatedAt)}</p>
+
+                    {deck.slides.length > 0
+                        ? (
+                            <>
+                            {
+                                <div className={`w-[200px] aspect-[${deck.ratio.replace(":", "/")}] bg-red-400 border-3 border-[var(--${deck.theme}_secondary)] flex items-center justify-center text-white`}>
+                                    <p>{deck.slides[0].title}</p>
+                                </div>
+                            
+                            }
+                            </>
+                        )
+                        : <span className="font-semibold">Aucune Slide</span>
+                    }
+
+
+
+                </div>
+                
                 <div className="flex gap-2 items-center justify-center">
                     <button
                         onClick={ () => handleEdit(deck) }
@@ -74,13 +98,14 @@ export default function DeckList({decks, removeDeck, loading, editForm, closeFor
             </div>
         );
     }
+
     return(
     <div className="">
         <h2 className="text-center max-w-8xl font-bold text-2xl" >Vos Présentations</h2>
 
 
 
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-wrap gap-4 justify-center">
             {decks.length==0 && <p className="text-neutral-400 italic m-4">Vous n'avez pas encore de présentation</p>}
             {decks.map((deck) => (
                 <DeckCard key={deck.id} deck={deck}/>
