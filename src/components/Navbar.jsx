@@ -21,7 +21,7 @@ export default function Navbar() {
 
     return (
         <nav className="bg-[#0093B8] shadow-sm">
-            <div className="max-w-8xl mx-auto px-4 sm:px6 lg:px-8">
+            <div className="max-w-[2000px] mx-auto px-4 sm:px6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <Link to="/decks">
                     <h1 className="text-white text-2xl font-bold hover:underline cursor-pointer">

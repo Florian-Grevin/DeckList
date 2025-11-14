@@ -1,90 +1,67 @@
 import { createElement } from "react";
+import { useState, useEffect } from "react";
+import SlideFrame from "./SlideFrame";
+import { getSlideKindTag, getKindClass } from "../utils/slideUtils";
 
-export default function SlideList({ratio, loading, slides,updateSlide,handleRemove, handleEdit, openForm}) {
 
-    const getSlideKindTag = (kind) => {
-        switch (kind) {
-            case "title": return "h3";
-            case "text": return "p";
-            case "image": return "img";
-            case "split": return "span";
-            case "list": return "ul";
-            case "quote": return "blockquote";
-            case "code": return "code";
-            default: return "div";
-        }
-    };
+import { DndContext } from '@dnd-kit/core';
 
-    const getKindClass = (kindTag) => {
-        switch (kindTag) {
-            case "h3": return "text-2xl font-semibold mb-2";
-            case "p": return "text-base text-gray-800 mb-1";
-            case "img": return "w-full h-auto rounded-lg shadow-md mb-4";
-            case "span": return "inline-block text-sm ";
-            case "ul": return "list-disc list-inside ";
-            case "blockquote": return "border-l-4 bg-white border-gray-400 pl-4 italic text-gray-600";
-            case "code": return "bg-gray-800 text-green-600 p-2 rounded text-sm font-mono";
-            default: return "text-black";
-        }
-    };
+// import {Draggable} from './Draggable';
+// import {Droppable} from './Droppable';
+
+
+export default function SlideList({ ratio, loading, slides, updateSlide, handleRemove, handleEdit, openForm }) {
+
+    const [isPresOpen, setIsPresOpen] = useState(false);
+    const [selectedSlide, setSelectedSlide] = useState(null);
+
+    useEffect(() => {
+        const handleKey = (e) => {
+            if (e.key === "ArrowLeft" && selectedSlide?.order > 0) {
+            changeSlide('-');
+            }
+            if (e.key === "ArrowRight" && selectedSlide?.order < slides.length - 1) {
+            changeSlide('+');
+            }
+        };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [selectedSlide, slides]);
+
+
+    const openPres = (slide) => {
+        setSelectedSlide(slide);
+        setIsPresOpen(true);
+    }
+
+    const closePres = () => {
+        setSelectedSlide(null);
+        setIsPresOpen(false);
+    }
+
+    const changeSlide = (state) => {
+        const slidePos = slides[selectedSlide?.order].order;
+        if (state === '-' && slidePos > 0) setSelectedSlide(slides[slidePos - 1])
+        else if (state === '+' && slidePos < slides.length - 1) setSelectedSlide(slides[slidePos + 1])
+    }
 
     const editForm = (slide) => {
         handleEdit(slide);
         openForm();
     }
 
-    const SlideCard = ({ slide }) => {
-        const kindTag = getSlideKindTag(slide.kind);
-        const className = getKindClass(kindTag);
-
-        const props = { className };
-
-
-        return (
-            <div
-                style={{ 
-                    backgroundColor: slide.bg, 
-                    width:"30%", 
-                    aspectRatio: ratio?.replace(":", "/") 
-                }}
-                className="flex flex-col text-black m-1 shadow-lg rounded-xl relative overflow-hidden"
-            >
-                <h2 className="text-2xl font-bold text-center mt-2 mb-4">{slide.title}</h2>
-                
-                {/* Container qui respecte l'espace restant */}
-                <div className="flex-1 flex items-center justify-center overflow-hidden">
-                    {slide.kind === "image" ? (
-                        <img 
-                            className="max-w-full max-h-full object-contain" 
-                            src={slide.imageUrl}
-                            alt={slide.title}
-                        />
-                    ) : (
-                        createElement(kindTag, props, slide.content)
-                    )}
-                </div>
-                
-                <p className="bg-white font-bold absolute bottom-0 right-0 m-2 px-2 py-1 rounded">
-                    {slide.order + 1}
-                </p>
-                
-                <div className="flex gap-2 items-center justify-center mt-2">
-                    <button
-                        onClick={() => editForm(slide)}
-                        className="hover:cursor-pointer hover:bg-amber-500 p-1 rounded-md"
-                    >
-                        ✏️
-                    </button>
-                    <button
-                        onClick={() => handleRemove(slide.id)}
-                        className="hover:cursor-pointer hover:bg-amber-500 p-1 rounded-md"
-                    >
-                        🗑️
-                    </button>              
-                </div>
-            </div>
-        )
-    }
+    const SlideCard = ({ slide }) => (
+        <SlideFrame
+            slide={slide}
+            ratio={ratio}
+            width="500px"
+            onClick={() => openPres(slide)}
+            showControls={true}
+            order={slide.order + 1}
+            onEdit={editForm}
+            onRemove={handleRemove}
+        />
+    );
 
     if (loading) {
         return (
@@ -94,15 +71,77 @@ export default function SlideList({ratio, loading, slides,updateSlide,handleRemo
         );
     }
 
-    return(
-        <div className="">
+    return (
+        <>
 
-            <div className="flex flex-wrap gap-3 justify-center">
-                {slides.map((slide)=>(
+            {isPresOpen && selectedSlide && (
+                <div
+                    className="flex fixed inset-0 bg-[#0008] items-center justify-center z-50 p-6"
+                    onClick={closePres}
+                >
+                    <div
+                        className="flex justify-between items-center relative p-6 mx-auto bg-white rounded-lg shadow-lg border-2 border-amber-500"
+                        style={{ 
+                            aspectRatio: ratio?.replace(":", "/"),
+                            height: "80%",
+                            maxHeight: "2000px",
+                            
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={closePres}
+                            className="absolute top-1 right-1 text-xl text-gray-600 hover:cursor-pointer hover:text-red-500"
+                        >
+                            ✖
+                        </button>
+
+                        <div className="flex justify-between h-full w-full">
+                            <div className="flex justify-center items-center">
+                                <button
+                                    className={`font-bold m-2 text-4xl ${selectedSlide?.order === 0
+                                        ? "opacity-0 cursor-default"
+                                        : "text-black hover:cursor-pointer hover:bg-cyan-700"
+                                        }`}
+                                    onClick={selectedSlide?.order === 0 ? undefined : () => changeSlide('-')}
+                                    disabled={selectedSlide?.order === 0}
+                                >
+                                    ←
+                                </button>
+                            </div>
+
+                            <SlideFrame
+                            slide={selectedSlide}
+                            ratio={ratio}
+                            borderColor="transparent"
+                            />
+
+                            <div className="flex flex-col justify-center items-center">
+                                <button
+                                    className={`font-bold m-2 text-4xl ${selectedSlide?.order === slides.length - 1
+                                        ? "opacity-0 cursor-default"
+                                        : "text-black hover:cursor-pointer hover:bg-cyan-700"
+                                        }`}
+                                    onClick={selectedSlide?.order === slides.length - 1 ? undefined : () => changeSlide('+')}
+                                    disabled={selectedSlide?.order === slides.length - 1}
+                                >
+                                    →
+                                </button>
+                            </div>
+
+                            
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex flex-wrap gap-3 items-center justify-center">
+                {slides.map((slide) => (
                     <SlideCard key={slide.id} slide={slide} />
                 ))}
             </div>
 
-        </div>
+
+        </>
     )
 } 

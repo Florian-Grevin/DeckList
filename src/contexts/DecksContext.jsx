@@ -16,12 +16,13 @@ export const DecksProvider = ({ children }) => {
     }, []);
 
     //Decks
-    const fetchDecks = async() => {
+/*    const fetchDecks = async() => {
 
         setLoading(true);
         try {
             const response = await api.get(`/decks`);
             const data = response.data.decks;
+            
             setDecks(data);
         }
         catch (error) {
@@ -33,7 +34,34 @@ export const DecksProvider = ({ children }) => {
         finally {
         setLoading(false);
         }
+    }*/
+
+        // DecksContext.jsx
+const fetchDecks = async (sortOrder = "updatedAt-desc") => {
+  setLoading(true);
+  try {
+    const response = await api.get(`/decks`);
+    let data = response.data.decks;
+
+    // tri avant setDecks
+    const [field, order] = sortOrder.split("-");
+    data = data.sort((a, b) =>
+      order === "asc"
+        ? new Date(a[field]) - new Date(b[field])
+        : new Date(b[field]) - new Date(a[field])
+    );
+
+    setDecks(data);
+  } catch (error) {
+    if (handle401(error, navigate)) return;
+    else {
+      console.error("Erreur lors de la récupération des présentations", error);
     }
+  } finally {
+    setLoading(false);
+  }
+};
+
 
     const value = {
         decks,

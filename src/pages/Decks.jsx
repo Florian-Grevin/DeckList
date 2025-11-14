@@ -7,19 +7,24 @@ import api from "../api.js";
 
 import { useNotification } from "../contexts/NotificationContext.jsx";
 import { useState, useEffect } from "react";
+import { useRef } from "react";
 
 import { useDecks } from "../contexts/DecksContext.jsx";
 
 export default function Decks() {
 
+    const selectRef = useRef(null);
+
     const navigate = useNavigate();
-    const {showSuccess, showError} = useNotification();
+    const { showSuccess, showError } = useNotification();
     const [editingDeck, setEditingDeck] = useState(null);
-    const [loading,setLoading]=useState(false)
+    const [firstSlides, setFirstSlides] = useState({});
+    const [loading, setLoading] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { decks,setDecks, fetchDecks } = useDecks();
-    
+
+    const { decks, setDecks, fetchDecks } = useDecks();
+
 
     const openForm = () => {
         setEditingDeck(null);
@@ -31,35 +36,21 @@ export default function Decks() {
     }
 
     const handleEdit = (deck) => {
-        //if(!checkForm(deck)) return;
         setEditingDeck(deck);
         setIsModalOpen(true);
     }
-
+    
     useEffect(() => {
-        fetchDecks();
-    }, []);
+        if (decks.length > 0) {
+            decks.forEach(deck => {
+                if (deck.slides.length > 0) {
+                    fetchFirstSlide(deck.id);
+                }
+            });
+        }
+    }, [decks]);
 
     //Decks
-    /*const fetchDecks = async() => {
-
-        setLoading(true);
-        try {
-            const response = await api.get(`/decks`);
-            const data = response.data.decks;
-            setDecks(data);
-        }
-        catch (error) {
-            if(handle401(error, navigate)) return;
-            else {
-                showError("Erreur lors de la récupération des présentations");
-            }
-        }
-        finally {
-        setLoading(false);
-        }
-    }*/
-
     const addDeck = async (formData) => {
         setLoading(true);
         try {
@@ -85,20 +76,19 @@ export default function Decks() {
         }
     };
 
-    const removeDeck = async(id) => {
+    const removeDeck = async (id) => {
         setLoading(true);
-        console.log("entering removeDeck")
         try {
             const response = await api.delete(`/decks/${id}`);
             const data = response.data;
             showSuccess(data.message)
-            fetchDecks()
+            fetchDecks();
         }
         catch (error) {
             console.log(error)
-            if(handle401(error, navigate)) return;
+            if (handle401(error, navigate)) return;
             else {
-                showError(error?.message ||"Erreur lors de la suppression d'une présentation");
+                showError(error?.message || "Erreur lors de la suppression d'une présentation");
             }
         }
         finally {
@@ -112,6 +102,8 @@ export default function Decks() {
     }
 
     const sortDecks = (createdUpdated = "createdAt", isAsc = "asc") => {
+        console.log(createdUpdated)
+        console.log(isAsc)
         const sorted = [...decks].sort((a, b) =>
             isAsc === "asc"
                 ? new Date(a[createdUpdated]) - new Date(b[createdUpdated])
@@ -120,20 +112,41 @@ export default function Decks() {
         setDecks(sorted);
     };
 
-    return(
-    <>
-        <Navbar />
-        <select onChange={handleSortDecks} className="font-semibold" name="sortOrder" id="sortOrder">
-            <option className="font-semibold"value="createdAt-desc">📅 Créations les plus récentes</option>
-            <option className="font-semibold" value="createdAt-asc">📅 Créations les plus anciennes</option>
-            <option className="font-semibold"value="updatedAt-desc">📅 Mise à jour les plus récentes</option>
-            <option className="font-semibold" value="updatedAt-asc">📅 Mise à jour les plus récentes</option>
-        </select>
+    //Slide
+    const fetchFirstSlide = async (deckId) => {
+        setLoading(true);
+        try {
+            const response = await api.get(`/decks/${deckId}/slides`);
+            const data = response.data.slides[0];
+            setFirstSlides(prev => ({ ...prev, [deckId]: data }));
+        }
+        catch (error) {
+            if (handle401(error, navigate)) return;
+            else {
+                showError("Erreur lors de la récupération du 1er slide");
+            }
+        }
+        finally {
+            setLoading(false);
+        }
+    };
 
-        <button onClick={openForm} className="bg-amber-500 text-white font-bold p-2 m-4 rounded-lg cursor-pointer">Créer Présentation</button>
-        {isModalOpen && <DeckForm addDeck={addDeck} deck={editingDeck} closeForm={closeForm}/>}
+    return (
+        <>
+            <Navbar />
+            <div className="flex justify-center gap-2">
+                <select ref={selectRef} onChange={handleSortDecks} className="font-semibold" name="sortOrder" id="sortOrder" defaultValue="updatedAt-desc">
+                    <option className="font-semibold" value="createdAt-desc">📅 Créations les plus récentes</option>
+                    <option className="font-semibold" value="createdAt-asc">📅 Créations les plus anciennes</option>
+                    <option className="font-semibold" value="updatedAt-desc">📅 Mise à jour les plus récentes</option>
+                    <option className="font-semibold" value="updatedAt-asc">📅 Mise à jour les plus anciennes</option>
+                </select>
 
-        <DeckList decks={decks} removeDeck={removeDeck} loading={loading} editForm={handleEdit}/>
-    </>
+                <button onClick={openForm} className="bg-amber-500 text-white font-bold p-2 m-4 rounded-lg cursor-pointer">Créer Présentation</button>
+            </div>
+            {isModalOpen && <DeckForm addDeck={addDeck} deck={editingDeck} closeForm={closeForm} />}
+
+            <DeckList decks={decks} removeDeck={removeDeck} loading={loading} editForm={handleEdit} firstSlides={firstSlides} />
+        </>
     )
 }
